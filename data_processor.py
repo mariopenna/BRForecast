@@ -351,8 +351,10 @@ def load_elo_history():
     history_path = os.path.join(DATA_DIR, "elo_history.csv")
     if os.path.exists(history_path):
         history_df = pd.read_csv(history_path)
-        if 'date' not in history_df.columns and 'date_unix' in history_df.columns:
+        if 'date_unix' in history_df.columns:
             history_df["date"] = pd.to_datetime(history_df["date_unix"], unit="s")
+        elif 'date' in history_df.columns:
+            history_df["date"] = pd.to_datetime(history_df["date"])
     else:
         history_df = pd.DataFrame()
     return ratings, history_df
