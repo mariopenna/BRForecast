@@ -1,0 +1,344 @@
+rodada,mandante,visitante,mandante_id,visitante_id,date_unix,status
+4,Botafogo,Vitória,615,610,1771977600,suspended
+4,Flamengo,Mirassol,612,2721,1771977600,suspended
+4,Bahia,Chapecoense,626,623,1771977600,suspended
+5,Mirassol,Santos,2721,611,1773189000,incomplete
+5,Atlético Mineiro,Internacional,620,630,1773266400,incomplete
+5,Atlético PR,Botafogo,622,615,1773266400,incomplete
+5,Bahia,Vitória,626,610,1773270000,incomplete
+5,Flamengo,Cruzeiro,612,613,1773275400,incomplete
+5,Corinthians,Coritiba,624,627,1773275400,incomplete
+5,Remo,Fluminense,2594,617,1773352800,incomplete
+5,Vasco da Gama,Palmeiras,625,619,1773354600,incomplete
+5,São Paulo,Chapecoense,618,623,1773356400,incomplete
+5,Grêmio,Bragantino,616,635,1773361800,incomplete
+6,Vitória,Atlético Mineiro,610,620,1773523800,incomplete
+6,Botafogo,Flamengo,615,612,1773531000,incomplete
+6,Fluminense,Atlético PR,617,622,1773601200,incomplete
+6,Santos,Corinthians,611,624,1773601200,incomplete
+6,Internacional,Bahia,630,626,1773601200,incomplete
+6,Coritiba,Remo,627,2594,1773610200,incomplete
+6,Palmeiras,Mirassol,619,2721,1773610200,incomplete
+6,Bragantino,São Paulo,635,618,1773617400,incomplete
+6,Cruzeiro,Vasco da Gama,613,625,1773617400,incomplete
+6,Chapecoense,Grêmio,623,616,1773702000,incomplete
+7,Palmeiras,Botafogo,619,615,1773871200,incomplete
+7,Bahia,Bragantino,626,635,1773871200,incomplete
+7,Atlético PR,Cruzeiro,622,613,1773873000,incomplete
+7,Mirassol,Coritiba,2721,627,1773874800,incomplete
+7,Atlético Mineiro,São Paulo,620,618,1773874800,incomplete
+7,Santos,Internacional,611,630,1773880200,incomplete
+7,Vasco da Gama,Fluminense,625,617,1773880200,incomplete
+7,Grêmio,Vitória,616,610,1773957600,incomplete
+7,Flamengo,Remo,612,2594,1773961200,incomplete
+7,Chapecoense,Corinthians,623,624,1773966600,incomplete
+8,Bragantino,Botafogo,635,615,1774119600,incomplete
+8,Fluminense,Atlético Mineiro,617,620,1774128600,incomplete
+8,São Paulo,Palmeiras,618,619,1774137600,incomplete
+8,Atlético PR,Coritiba,622,627,1774206000,incomplete
+8,Cruzeiro,Santos,613,611,1774206000,incomplete
+8,Remo,Bahia,2594,626,1774206000,incomplete
+8,Vasco da Gama,Grêmio,625,616,1774206000,incomplete
+8,Vitória,Mirassol,610,2721,1774215000,incomplete
+8,Internacional,Chapecoense,630,623,1774215000,incomplete
+8,Corinthians,Flamengo,624,612,1774222200,incomplete
+9,Bragantino,Flamengo,635,612,1775001600,incomplete
+9,Cruzeiro,Vitória,613,610,1775001600,incomplete
+9,Botafogo,Mirassol,615,2721,1775001600,incomplete
+9,Chapecoense,Atlético Mineiro,623,620,1775001600,incomplete
+9,Coritiba,Vasco da Gama,627,625,1775001600,incomplete
+9,Bahia,Atlético PR,626,622,1775001600,incomplete
+9,Palmeiras,Grêmio,619,616,1775001600,incomplete
+9,Santos,Remo,611,2594,1775001600,incomplete
+9,Fluminense,Corinthians,617,624,1775001600,incomplete
+9,Internacional,São Paulo,630,618,1775001600,incomplete
+10,Atlético Mineiro,Atlético PR,620,622,1775260800,incomplete
+10,Corinthians,Internacional,624,630,1775260800,incomplete
+10,Vasco da Gama,Botafogo,625,615,1775260800,incomplete
+10,Grêmio,Remo,616,2594,1775260800,incomplete
+10,Bahia,Palmeiras,626,619,1775260800,incomplete
+10,Coritiba,Fluminense,627,617,1775260800,incomplete
+10,Flamengo,Santos,612,611,1775260800,incomplete
+10,Chapecoense,Vitória,623,610,1775260800,incomplete
+10,Mirassol,Bragantino,2721,635,1775260800,incomplete
+10,São Paulo,Cruzeiro,618,613,1775260800,incomplete
+11,Vitória,São Paulo,610,618,1775865600,incomplete
+11,Corinthians,Palmeiras,624,619,1775865600,incomplete
+11,Fluminense,Flamengo,617,612,1775865600,incomplete
+11,Atlético PR,Chapecoense,622,623,1775865600,incomplete
+11,Remo,Vasco da Gama,2594,625,1775865600,incomplete
+11,Internacional,Grêmio,630,616,1775865600,incomplete
+11,Cruzeiro,Bragantino,613,635,1775865600,incomplete
+11,Botafogo,Coritiba,615,627,1775865600,incomplete
+11,Mirassol,Bahia,2721,626,1775865600,incomplete
+11,Santos,Atlético Mineiro,611,620,1775865600,incomplete
+12,Vasco da Gama,São Paulo,625,618,1776470400,incomplete
+12,Palmeiras,Atlético PR,619,622,1776470400,incomplete
+12,Bragantino,Remo,635,2594,1776470400,incomplete
+12,Flamengo,Bahia,612,626,1776470400,incomplete
+12,Chapecoense,Botafogo,623,615,1776470400,incomplete
+12,Cruzeiro,Grêmio,613,616,1776470400,incomplete
+12,Coritiba,Atlético Mineiro,627,620,1776470400,incomplete
+12,Internacional,Mirassol,630,2721,1776470400,incomplete
+12,Santos,Fluminense,611,617,1776470400,incomplete
+12,Vitória,Corinthians,610,624,1776470400,incomplete
+13,Fluminense,Chapecoense,617,623,1777075200,incomplete
+13,Atlético PR,Vitória,622,610,1777075200,incomplete
+13,Bragantino,Palmeiras,635,619,1777075200,incomplete
+13,Corinthians,Vasco da Gama,624,625,1777075200,incomplete
+13,Atlético Mineiro,Flamengo,620,612,1777075200,incomplete
+13,Botafogo,Internacional,615,630,1777075200,incomplete
+13,São Paulo,Mirassol,618,2721,1777075200,incomplete
+13,Bahia,Santos,626,611,1777075200,incomplete
+13,Grêmio,Coritiba,616,627,1777075200,incomplete
+13,Remo,Cruzeiro,2594,613,1777075200,incomplete
+14,Chapecoense,Bragantino,623,635,1777680000,incomplete
+14,Vitória,Coritiba,610,627,1777680000,incomplete
+14,Atlético PR,Grêmio,622,616,1777680000,incomplete
+14,Internacional,Fluminense,630,617,1777680000,incomplete
+14,Botafogo,Remo,615,2594,1777680000,incomplete
+14,Flamengo,Vasco da Gama,612,625,1777680000,incomplete
+14,Mirassol,Corinthians,2721,624,1777680000,incomplete
+14,Cruzeiro,Atlético Mineiro,613,620,1777680000,incomplete
+14,São Paulo,Bahia,618,626,1777680000,incomplete
+14,Palmeiras,Santos,619,611,1777680000,incomplete
+15,Remo,Palmeiras,2594,619,1778284800,incomplete
+15,Bahia,Cruzeiro,626,613,1778284800,incomplete
+15,Coritiba,Internacional,627,630,1778284800,incomplete
+15,Grêmio,Flamengo,616,612,1778284800,incomplete
+15,Mirassol,Chapecoense,2721,623,1778284800,incomplete
+15,Atlético Mineiro,Botafogo,620,615,1778284800,incomplete
+15,Fluminense,Vitória,617,610,1778284800,incomplete
+15,Corinthians,São Paulo,624,618,1778284800,incomplete
+15,Santos,Bragantino,611,635,1778284800,incomplete
+15,Vasco da Gama,Atlético PR,625,622,1778284800,incomplete
+16,Botafogo,Corinthians,615,624,1778889600,incomplete
+16,Santos,Coritiba,611,627,1778889600,incomplete
+16,Fluminense,São Paulo,617,618,1778889600,incomplete
+16,Palmeiras,Cruzeiro,619,613,1778889600,incomplete
+16,Chapecoense,Remo,623,2594,1778889600,incomplete
+16,Bahia,Grêmio,626,616,1778889600,incomplete
+16,Internacional,Vasco da Gama,630,625,1778889600,incomplete
+16,Atlético Mineiro,Mirassol,620,2721,1778889600,incomplete
+16,Bragantino,Vitória,635,610,1778889600,incomplete
+16,Atlético PR,Flamengo,622,612,1778889600,incomplete
+17,Vasco da Gama,Bragantino,625,635,1779494400,incomplete
+17,Flamengo,Palmeiras,612,619,1779494400,incomplete
+17,Cruzeiro,Chapecoense,613,623,1779494400,incomplete
+17,Vitória,Internacional,610,630,1779494400,incomplete
+17,Remo,Atlético PR,2594,622,1779494400,incomplete
+17,Coritiba,Bahia,627,626,1779494400,incomplete
+17,Mirassol,Fluminense,2721,617,1779494400,incomplete
+17,Grêmio,Santos,616,611,1779494400,incomplete
+17,São Paulo,Botafogo,618,615,1779494400,incomplete
+17,Corinthians,Atlético Mineiro,624,620,1779494400,incomplete
+18,Palmeiras,Chapecoense,619,623,1780099200,incomplete
+18,Vasco da Gama,Atlético Mineiro,625,620,1780099200,incomplete
+18,Cruzeiro,Fluminense,613,617,1780099200,incomplete
+18,Santos,Vitória,611,610,1780099200,incomplete
+18,Flamengo,Coritiba,612,627,1780099200,incomplete
+18,Grêmio,Corinthians,616,624,1780099200,incomplete
+18,Atlético PR,Mirassol,622,2721,1780099200,incomplete
+18,Bahia,Botafogo,626,615,1780099200,incomplete
+18,Bragantino,Internacional,635,630,1780099200,incomplete
+18,Remo,São Paulo,2594,618,1780099200,incomplete
+19,Mirassol,Grêmio,2721,616,1784678400,incomplete
+19,Atlético Mineiro,Bahia,620,626,1784678400,incomplete
+19,Coritiba,Palmeiras,627,619,1784678400,incomplete
+19,Botafogo,Santos,615,611,1784678400,incomplete
+19,Internacional,Cruzeiro,630,613,1784678400,incomplete
+19,São Paulo,Atlético PR,618,622,1784678400,incomplete
+19,Vitória,Vasco da Gama,610,625,1784678400,incomplete
+19,Fluminense,Bragantino,617,635,1784678400,incomplete
+19,Corinthians,Remo,624,2594,1784678400,incomplete
+19,Chapecoense,Flamengo,623,612,1784678400,incomplete
+20,Grêmio,Fluminense,616,617,1784937600,incomplete
+20,Remo,Vitória,2594,610,1784937600,incomplete
+20,Santos,Chapecoense,611,623,1784937600,incomplete
+20,Bahia,Corinthians,626,624,1784937600,incomplete
+20,Atlético PR,Internacional,622,630,1784937600,incomplete
+20,Cruzeiro,Botafogo,613,615,1784937600,incomplete
+20,Bragantino,Coritiba,635,627,1784937600,incomplete
+20,Palmeiras,Atlético Mineiro,619,620,1784937600,incomplete
+20,Vasco da Gama,Mirassol,625,2721,1784937600,incomplete
+20,Flamengo,São Paulo,612,618,1784937600,incomplete
+21,Coritiba,Cruzeiro,627,613,1785283200,incomplete
+21,Atlético Mineiro,Bragantino,620,635,1785283200,incomplete
+21,Internacional,Flamengo,630,612,1785283200,incomplete
+21,São Paulo,Santos,618,611,1785283200,incomplete
+21,Corinthians,Atlético PR,624,622,1785283200,incomplete
+21,Botafogo,Grêmio,615,616,1785283200,incomplete
+21,Fluminense,Bahia,617,626,1785283200,incomplete
+21,Mirassol,Remo,2721,2594,1785283200,incomplete
+21,Chapecoense,Vasco da Gama,623,625,1785283200,incomplete
+21,Vitória,Palmeiras,610,619,1785283200,incomplete
+22,Grêmio,São Paulo,616,618,1786147200,incomplete
+22,Palmeiras,Internacional,619,630,1786147200,incomplete
+22,Bragantino,Corinthians,635,624,1786147200,incomplete
+22,Cruzeiro,Mirassol,613,2721,1786147200,incomplete
+22,Bahia,Vasco da Gama,626,625,1786147200,incomplete
+22,Coritiba,Chapecoense,627,623,1786147200,incomplete
+22,Santos,Atlético PR,611,622,1786147200,incomplete
+22,Botafogo,Fluminense,615,617,1786147200,incomplete
+22,Flamengo,Vitória,612,610,1786147200,incomplete
+22,Remo,Atlético Mineiro,2594,620,1786147200,incomplete
+23,Vasco da Gama,Santos,625,611,1786752000,incomplete
+23,Fluminense,Palmeiras,617,619,1786752000,incomplete
+23,Internacional,Remo,630,2594,1786752000,incomplete
+23,Atlético Mineiro,Grêmio,620,616,1786752000,incomplete
+23,São Paulo,Coritiba,618,627,1786752000,incomplete
+23,Mirassol,Flamengo,2721,612,1786752000,incomplete
+23,Chapecoense,Bahia,623,626,1786752000,incomplete
+23,Vitória,Botafogo,610,615,1786752000,incomplete
+23,Atlético PR,Bragantino,622,635,1786752000,incomplete
+23,Corinthians,Cruzeiro,624,613,1786752000,incomplete
+24,Palmeiras,Vasco da Gama,619,625,1787356800,incomplete
+24,Santos,Mirassol,611,2721,1787356800,incomplete
+24,Botafogo,Atlético PR,615,622,1787356800,incomplete
+24,Bragantino,Grêmio,635,616,1787356800,incomplete
+24,Cruzeiro,Flamengo,613,612,1787356800,incomplete
+24,Fluminense,Remo,617,2594,1787356800,incomplete
+24,Chapecoense,São Paulo,623,618,1787356800,incomplete
+24,Vitória,Bahia,610,626,1787356800,incomplete
+24,Coritiba,Corinthians,627,624,1787356800,incomplete
+24,Internacional,Atlético Mineiro,630,620,1787356800,incomplete
+25,Atlético PR,Fluminense,622,617,1787961600,incomplete
+25,Vasco da Gama,Cruzeiro,625,613,1787961600,incomplete
+25,Atlético Mineiro,Vitória,620,610,1787961600,incomplete
+25,Grêmio,Chapecoense,616,623,1787961600,incomplete
+25,Flamengo,Botafogo,612,615,1787961600,incomplete
+25,Remo,Coritiba,2594,627,1787961600,incomplete
+25,Bahia,Internacional,626,630,1787961600,incomplete
+25,São Paulo,Bragantino,618,635,1787961600,incomplete
+25,Corinthians,Santos,624,611,1787961600,incomplete
+25,Mirassol,Palmeiras,2721,619,1787961600,incomplete
+26,Botafogo,Palmeiras,615,619,1788566400,incomplete
+26,Vitória,Grêmio,610,616,1788566400,incomplete
+26,Remo,Flamengo,2594,612,1788566400,incomplete
+26,Bragantino,Bahia,635,626,1788566400,incomplete
+26,Coritiba,Mirassol,627,2721,1788566400,incomplete
+26,Cruzeiro,Atlético PR,613,622,1788566400,incomplete
+26,Corinthians,Chapecoense,624,623,1788566400,incomplete
+26,Internacional,Santos,630,611,1788566400,incomplete
+26,São Paulo,Atlético Mineiro,618,620,1788566400,incomplete
+26,Fluminense,Vasco da Gama,617,625,1788566400,incomplete
+27,Chapecoense,Internacional,623,630,1789171200,incomplete
+27,Palmeiras,São Paulo,619,618,1789171200,incomplete
+27,Bahia,Remo,626,2594,1789171200,incomplete
+27,Coritiba,Atlético PR,627,622,1789171200,incomplete
+27,Grêmio,Vasco da Gama,616,625,1789171200,incomplete
+27,Atlético Mineiro,Fluminense,620,617,1789171200,incomplete
+27,Santos,Cruzeiro,611,613,1789171200,incomplete
+27,Botafogo,Bragantino,615,635,1789171200,incomplete
+27,Flamengo,Corinthians,612,624,1789171200,incomplete
+27,Mirassol,Vitória,2721,610,1789171200,incomplete
+28,Vitória,Cruzeiro,610,613,1789776000,incomplete
+28,Remo,Santos,2594,611,1789776000,incomplete
+28,Grêmio,Palmeiras,616,619,1789776000,incomplete
+28,Flamengo,Bragantino,612,635,1789776000,incomplete
+28,Corinthians,Fluminense,624,617,1789776000,incomplete
+28,Atlético Mineiro,Chapecoense,620,623,1789776000,incomplete
+28,Mirassol,Botafogo,2721,615,1789776000,incomplete
+28,São Paulo,Internacional,618,630,1789776000,incomplete
+28,Vasco da Gama,Coritiba,625,627,1789776000,incomplete
+28,Atlético PR,Bahia,622,626,1789776000,incomplete
+29,Bragantino,Mirassol,635,2721,1791331200,incomplete
+29,Atlético PR,Atlético Mineiro,622,620,1791331200,incomplete
+29,Vitória,Chapecoense,610,623,1791331200,incomplete
+29,Internacional,Corinthians,630,624,1791331200,incomplete
+29,Fluminense,Coritiba,617,627,1791331200,incomplete
+29,Santos,Flamengo,611,612,1791331200,incomplete
+29,Palmeiras,Bahia,619,626,1791331200,incomplete
+29,Botafogo,Vasco da Gama,615,625,1791331200,incomplete
+29,Remo,Grêmio,2594,616,1791331200,incomplete
+29,Cruzeiro,São Paulo,613,618,1791331200,incomplete
+30,Bahia,Mirassol,626,2721,1791590400,incomplete
+30,Chapecoense,Atlético PR,623,622,1791590400,incomplete
+30,Coritiba,Botafogo,627,615,1791590400,incomplete
+30,Grêmio,Internacional,616,630,1791590400,incomplete
+30,Atlético Mineiro,Santos,620,611,1791590400,incomplete
+30,Bragantino,Cruzeiro,635,613,1791590400,incomplete
+30,Palmeiras,Corinthians,619,624,1791590400,incomplete
+30,Flamengo,Fluminense,612,617,1791590400,incomplete
+30,São Paulo,Vitória,618,610,1791590400,incomplete
+30,Vasco da Gama,Remo,625,2594,1791590400,incomplete
+31,Corinthians,Vitória,624,610,1792195200,incomplete
+31,São Paulo,Vasco da Gama,618,625,1792195200,incomplete
+31,Botafogo,Chapecoense,615,623,1792195200,incomplete
+31,Bahia,Flamengo,626,612,1792195200,incomplete
+31,Remo,Bragantino,2594,635,1792195200,incomplete
+31,Grêmio,Cruzeiro,616,613,1792195200,incomplete
+31,Atlético Mineiro,Coritiba,620,627,1792195200,incomplete
+31,Mirassol,Internacional,2721,630,1792195200,incomplete
+31,Fluminense,Santos,617,611,1792195200,incomplete
+31,Atlético PR,Palmeiras,622,619,1792195200,incomplete
+32,Coritiba,Grêmio,627,616,1792800000,incomplete
+32,Cruzeiro,Remo,613,2594,1792800000,incomplete
+32,Mirassol,São Paulo,2721,618,1792800000,incomplete
+32,Palmeiras,Bragantino,619,635,1792800000,incomplete
+32,Flamengo,Atlético Mineiro,612,620,1792800000,incomplete
+32,Santos,Bahia,611,626,1792800000,incomplete
+32,Chapecoense,Fluminense,623,617,1792800000,incomplete
+32,Vitória,Atlético PR,610,622,1792800000,incomplete
+32,Internacional,Botafogo,630,615,1792800000,incomplete
+32,Vasco da Gama,Corinthians,625,624,1792800000,incomplete
+33,Bahia,São Paulo,626,618,1793145600,incomplete
+33,Bragantino,Chapecoense,635,623,1793145600,incomplete
+33,Corinthians,Mirassol,624,2721,1793145600,incomplete
+33,Coritiba,Vitória,627,610,1793145600,incomplete
+33,Grêmio,Atlético PR,616,622,1793145600,incomplete
+33,Remo,Botafogo,2594,615,1793145600,incomplete
+33,Atlético Mineiro,Cruzeiro,620,613,1793145600,incomplete
+33,Santos,Palmeiras,611,619,1793145600,incomplete
+33,Fluminense,Internacional,617,630,1793145600,incomplete
+33,Vasco da Gama,Flamengo,625,612,1793145600,incomplete
+34,Bragantino,Santos,635,611,1793750400,incomplete
+34,São Paulo,Corinthians,618,624,1793750400,incomplete
+34,Internacional,Coritiba,630,627,1793750400,incomplete
+34,Atlético PR,Vasco da Gama,622,625,1793750400,incomplete
+34,Vitória,Fluminense,610,617,1793750400,incomplete
+34,Chapecoense,Mirassol,623,2721,1793750400,incomplete
+34,Palmeiras,Remo,619,2594,1793750400,incomplete
+34,Botafogo,Atlético Mineiro,615,620,1793750400,incomplete
+34,Flamengo,Grêmio,612,616,1793750400,incomplete
+34,Cruzeiro,Bahia,613,626,1793750400,incomplete
+35,Mirassol,Atlético Mineiro,2721,620,1794960000,incomplete
+35,Vitória,Bragantino,610,635,1794960000,incomplete
+35,Cruzeiro,Palmeiras,613,619,1794960000,incomplete
+35,Coritiba,Santos,627,611,1794960000,incomplete
+35,Corinthians,Botafogo,624,615,1794960000,incomplete
+35,Remo,Chapecoense,2594,623,1794960000,incomplete
+35,Grêmio,Bahia,616,626,1794960000,incomplete
+35,Vasco da Gama,Internacional,625,630,1794960000,incomplete
+35,Flamengo,Atlético PR,612,622,1794960000,incomplete
+35,São Paulo,Fluminense,618,617,1794960000,incomplete
+36,Internacional,Vitória,630,610,1795219200,incomplete
+36,Santos,Grêmio,611,616,1795219200,incomplete
+36,Fluminense,Mirassol,617,2721,1795219200,incomplete
+36,Atlético Mineiro,Corinthians,620,624,1795219200,incomplete
+36,Botafogo,São Paulo,615,618,1795219200,incomplete
+36,Bragantino,Vasco da Gama,635,625,1795219200,incomplete
+36,Chapecoense,Cruzeiro,623,613,1795219200,incomplete
+36,Bahia,Coritiba,626,627,1795219200,incomplete
+36,Atlético PR,Remo,622,2594,1795219200,incomplete
+36,Palmeiras,Flamengo,619,612,1795219200,incomplete
+37,Mirassol,Atlético PR,2721,622,1795824000,incomplete
+37,Internacional,Bragantino,630,635,1795824000,incomplete
+37,Vitória,Santos,610,611,1795824000,incomplete
+37,Chapecoense,Palmeiras,623,619,1795824000,incomplete
+37,Coritiba,Flamengo,627,612,1795824000,incomplete
+37,Fluminense,Cruzeiro,617,613,1795824000,incomplete
+37,Atlético Mineiro,Vasco da Gama,620,625,1795824000,incomplete
+37,Botafogo,Bahia,615,626,1795824000,incomplete
+37,São Paulo,Remo,618,2594,1795824000,incomplete
+37,Corinthians,Grêmio,624,616,1795824000,incomplete
+38,Palmeiras,Coritiba,619,627,1796169600,incomplete
+38,Santos,Botafogo,611,615,1796169600,incomplete
+38,Bahia,Atlético Mineiro,626,620,1796169600,incomplete
+38,Grêmio,Mirassol,616,2721,1796169600,incomplete
+38,Vasco da Gama,Vitória,625,610,1796169600,incomplete
+38,Flamengo,Chapecoense,612,623,1796169600,incomplete
+38,Remo,Corinthians,2594,624,1796169600,incomplete
+38,Cruzeiro,Internacional,613,630,1796169600,incomplete
+38,Atlético PR,São Paulo,622,618,1796169600,incomplete
+38,Bragantino,Fluminense,635,617,1796169600,incomplete
