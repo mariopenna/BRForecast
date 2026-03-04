@@ -2,8 +2,12 @@
 
 Carrega dados dos CSVs e do pipeline (ELO, Poisson, Match Analysis),
 aplica cache do Streamlit, e transforma em formatos prontos para Plotly.
+
+Quando o banco SQLite nao esta disponivel (ex: Streamlit Cloud),
+todas as funcoes usam CSVs pre-exportados como fallback.
 """
 
+import json
 import pandas as pd
 import numpy as np
 import os
@@ -14,6 +18,13 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 TARGET_YEAR = 2026
+
+# Detect if the SQLite database is available (local dev vs Cloud)
+try:
+    from src.config import DB_PATH
+    _DB_AVAILABLE = os.path.exists(DB_PATH)
+except Exception:
+    _DB_AVAILABLE = False
 
 
 def _cache_data(ttl=3600, **kwargs):
@@ -40,6 +51,35 @@ def _cache_data(ttl=3600, **kwargs):
         wrapper.__doc__ = func.__doc__
         return wrapper
     return decorator
+
+
+# =========================================================================
+# 0. CSV fallback helpers (for when DB is unavailable)
+# =========================================================================
+
+@_cache_data(ttl=3600)
+def _load_completed_csv(year=TARGET_YEAR):
+    """Carrega jogos realizados do CSV pre-exportado."""
+    path = os.path.join(DATA_DIR, f"completed_matches_{year}.csv")
+    if not os.path.exists(path):
+        return pd.DataFrame()
+    df = pd.read_csv(path)
+    for col in ['team_a_xg', 'team_b_xg']:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+    return df
+
+
+def _load_league_avgs():
+    """Carrega league_avgs do JSON pre-exportado."""
+    path = os.path.join(DATA_DIR, "league_avgs.json")
+    if os.path.exists(path):
+        with open(path) as f:
+            return json.load(f)
+    return {
+        'avg_home_goals': 1.5, 'avg_away_goals': 1.2,
+        'avg_total': 2.7, 'metric': 'xG', 'n_matches': 0,
+    }
 
 
 # =========================================================================
@@ -123,9 +163,20 @@ def compute_elo_data():
         elo_ratings: dict {team: rating}
         elo_history: DataFrame com historico completo
     """
-    from src.elo import load_historical_matches, calculate_all_elos
-    matches = load_historical_matches()
-    ratings, history = calculate_all_elos(matches)
+    if _DB_AVAILABLE:
+        from src.elo import load_historical_matches, calculate_all_elos
+        matches = load_historical_matches()
+        ratings, history = calculate_all_elos(matches)
+        return ratings, history
+
+    # Fallback: load from CSVs
+    elo_csv = load_elo_csv()
+    ratings = dict(zip(elo_csv['team'], elo_csv['elo_rating']))
+    history_path = os.path.join(DATA_DIR, "elo_history.csv")
+    if os.path.exists(history_path):
+        history = pd.read_csv(history_path)
+    else:
+        history = pd.DataFrame()
     return ratings, history
 
 
@@ -137,17 +188,27 @@ def compute_strengths(year=TARGET_YEAR):
         team_strengths: DataFrame
         league_avgs: dict
     """
-    from src.config import MIN_MATCHES_SEASON
-    from src.poisson import load_serie_a_with_xg, calculate_team_strengths
+    if _DB_AVAILABLE:
+        from src.config import MIN_MATCHES_SEASON
+        from src.poisson import load_serie_a_with_xg, calculate_team_strengths
 
-    matches_xg = load_serie_a_with_xg()
-    target = matches_xg[matches_xg['season_year'] == year]
-    target_done = target[target['status'] == 'complete']
+        matches_xg = load_serie_a_with_xg()
+        target = matches_xg[matches_xg['season_year'] == year]
+        target_done = target[target['status'] == 'complete']
 
-    if len(target_done) < MIN_MATCHES_SEASON:
-        expanded = matches_xg[matches_xg['season_year'] >= year - 1]
-        return calculate_team_strengths(expanded)
-    return calculate_team_strengths(target_done)
+        if len(target_done) < MIN_MATCHES_SEASON:
+            expanded = matches_xg[matches_xg['season_year'] >= year - 1]
+            return calculate_team_strengths(expanded)
+        return calculate_team_strengths(target_done)
+
+    # Fallback: load from CSVs
+    path = os.path.join(DATA_DIR, f"team_strengths_{year}.csv")
+    if os.path.exists(path):
+        team_strengths = pd.read_csv(path)
+    else:
+        team_strengths = pd.DataFrame(columns=['team', 'attack', 'defense', 'matches', 'avg_for', 'avg_against'])
+    league_avgs = _load_league_avgs()
+    return team_strengths, league_avgs
 
 
 @_cache_data(ttl=3600)
@@ -161,11 +222,14 @@ def compute_xpts(year=TARGET_YEAR):
     Ref: https://mckayjohns.substack.com/p/how-to-calculate-expected-points
     """
     from scipy.stats import poisson
-    from src.config import SERIE_A_IDS
-    from src.load_data import load_completed_matches
 
-    season_id = SERIE_A_IDS[year]
-    completed = load_completed_matches(season_id)
+    if _DB_AVAILABLE:
+        from src.config import SERIE_A_IDS
+        from src.load_data import load_completed_matches
+        season_id = SERIE_A_IDS[year]
+        completed = load_completed_matches(season_id)
+    else:
+        completed = _load_completed_csv(year)
 
     if len(completed) == 0:
         return pd.DataFrame(columns=["team", "xpts"])
@@ -212,11 +276,14 @@ def compute_match_breakdown(year=TARGET_YEAR):
             opp, loc(C/F), gf, ga, xgf, xga, xpts_match
     """
     from scipy.stats import poisson
-    from src.config import SERIE_A_IDS
-    from src.load_data import load_completed_matches
 
-    season_id = SERIE_A_IDS[year]
-    completed = load_completed_matches(season_id)
+    if _DB_AVAILABLE:
+        from src.config import SERIE_A_IDS
+        from src.load_data import load_completed_matches
+        season_id = SERIE_A_IDS[year]
+        completed = load_completed_matches(season_id)
+    else:
+        completed = _load_completed_csv(year)
 
     if len(completed) == 0:
         return {}
@@ -271,12 +338,23 @@ def load_elo_history():
     team, elo_before, elo_after, opponent, is_home, goals_for,
     goals_against, result, k_used.
     """
-    from src.elo import load_historical_matches, calculate_all_elos
+    if _DB_AVAILABLE:
+        from src.elo import load_historical_matches, calculate_all_elos
+        matches = load_historical_matches()
+        ratings, history_df = calculate_all_elos(matches)
+        history_df["date"] = pd.to_datetime(history_df["date_unix"], unit="s")
+        return ratings, history_df
 
-    matches = load_historical_matches()
-    ratings, history_df = calculate_all_elos(matches)
-    # Converter date_unix para datetime
-    history_df["date"] = pd.to_datetime(history_df["date_unix"], unit="s")
+    # Fallback: load from CSVs
+    elo_csv = load_elo_csv()
+    ratings = dict(zip(elo_csv['team'], elo_csv['elo_rating']))
+    history_path = os.path.join(DATA_DIR, "elo_history.csv")
+    if os.path.exists(history_path):
+        history_df = pd.read_csv(history_path)
+        if 'date' not in history_df.columns and 'date_unix' in history_df.columns:
+            history_df["date"] = pd.to_datetime(history_df["date_unix"], unit="s")
+    else:
+        history_df = pd.DataFrame()
     return ratings, history_df
 
 
@@ -287,12 +365,15 @@ def compute_match_cards(year=TARGET_YEAR):
     Returns:
         DataFrame com uma linha por jogo e metricas de merecimento.
     """
-    from src.config import SERIE_A_IDS
-    from src.load_data import load_completed_matches
     from src.match_analysis import analyze_all_matches
 
-    season_id = SERIE_A_IDS[year]
-    completed = load_completed_matches(season_id)
+    if _DB_AVAILABLE:
+        from src.config import SERIE_A_IDS
+        from src.load_data import load_completed_matches
+        season_id = SERIE_A_IDS[year]
+        completed = load_completed_matches(season_id)
+    else:
+        completed = _load_completed_csv(year)
 
     if len(completed) == 0:
         return pd.DataFrame()
