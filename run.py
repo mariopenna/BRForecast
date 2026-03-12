@@ -79,6 +79,13 @@ def run_pipeline(season_year, n_sims, backtest_mode=False, backtest_rounds=None)
     export_all(season_id, elo_ratings, team_strengths, league_avgs,
                adj_goals_df=adj_goals_df)
 
+    # Export completed matches CSV (para Streamlit Cloud)
+    from src.load_data import load_completed_matches as _load_completed
+    completed = _load_completed(season_id)
+    comp_path = os.path.join(DATA_DIR, f"completed_matches_{season_year}.csv")
+    completed.to_csv(comp_path, index=False)
+    print(f"       Completed matches CSV: {len(completed)} jogos")
+
     # Export adjusted goals CSV (para Streamlit Cloud)
     if adj_goals_df is not None:
         adj_path = os.path.join(DATA_DIR, "adjusted_goals.csv")
