@@ -22,7 +22,7 @@ from src.config import (
     DB_PATH, DATA_DIR, SERIE_A_IDS, TARGET_YEAR,
     HFA, ELO_LAMBDA_WEIGHT, ZONES, N_SIMULATIONS,
     MIN_MATCHES_SEASON, POISSON_MAX_GOALS, DIXON_COLES_RHO,
-    HOT_UPDATE, K_SIMULATION,
+    HOT_UPDATE, K_SIMULATION, IMPORTANCE_LAMBDA_BOOST,
 )
 from src.table import (
     table_to_arrays, update_table_np, rank_teams_np,
@@ -148,7 +148,8 @@ def _prepare_matches_hot(remaining_matches, team_strengths, team_idx):
 
 def _simulate_season_hot(table_data, matches_info, strengths_indexed,
                          league_avgs, elo_ratings_sim, hfa, k_sim,
-                         elo_weight, rho, max_goals):
+                         elo_weight, rho, max_goals,
+                         importance_dict=None, importance_boost=IMPORTANCE_LAMBDA_BOOST):
     """Simula uma temporada com Hot ELO + Hot Lambda.
 
     Após cada jogo simulado:
@@ -166,6 +167,8 @@ def _simulate_season_hot(table_data, matches_info, strengths_indexed,
         elo_weight: peso do ELO no ajuste dos lambdas
         rho: Dixon-Coles rho
         max_goals: máximo de gols na matriz
+        importance_dict: dict {(home, away): (imp_home, imp_away)} ou None
+        importance_boost: fator maximo de boost nos lambdas
     """
     avg_h = league_avgs['avg_home_goals']
     avg_a = league_avgs['avg_away_goals']
@@ -194,6 +197,13 @@ def _simulate_season_hot(table_data, matches_info, strengths_indexed,
         else:
             lam_h = max(0.2, base_lam_h)
             lam_a = max(0.2, base_lam_a)
+
+        # Importance boost: time em jogo decisivo rende mais
+        if importance_dict is not None and importance_boost > 0:
+            imp = importance_dict.get((home, away))
+            if imp is not None:
+                lam_h *= (1.0 + importance_boost * imp[0])
+                lam_a *= (1.0 + importance_boost * imp[1])
 
         # Matriz de probabilidades (Poisson + Dixon-Coles inline)
         h_pmf = poisson_dist.pmf(goal_range, lam_h)
@@ -239,12 +249,15 @@ def _simulate_season_hot(table_data, matches_info, strengths_indexed,
 
 def run_monte_carlo(n_simulations, remaining_matches, current_table,
                     team_strengths, league_avgs, elo_ratings=None,
-                    show_progress=True, hot_update=HOT_UPDATE):
+                    show_progress=True, hot_update=HOT_UPDATE,
+                    importance_dict=None):
     """Roda N simulações do campeonato.
 
     Args:
         hot_update: Se True, atualiza ELO e recalcula lambdas a cada jogo
                     simulado (mais realista, ~10x mais lento).
+        importance_dict: dict {(home, away): (imp_home, imp_away)} para
+                         boost de lambdas em jogos decisivos. Opcional.
 
     Returns:
         positions: ndarray (n_sims, n_teams)
@@ -281,6 +294,7 @@ def run_monte_carlo(n_simulations, remaining_matches, current_table,
                 hfa=HFA, k_sim=K_SIMULATION,
                 elo_weight=ELO_LAMBDA_WEIGHT,
                 rho=DIXON_COLES_RHO, max_goals=POISSON_MAX_GOALS,
+                importance_dict=importance_dict,
             )
 
             positions[sim] = pos

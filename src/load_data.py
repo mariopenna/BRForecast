@@ -19,6 +19,7 @@ import numpy as np
 from src.config import (
     DB_PATH, DATA_DIR, SERIE_A_IDS, TARGET_YEAR,
     HFA, ELO_LAMBDA_WEIGHT, MIN_MATCHES_SEASON,
+    ADJUSTED_GOALS_WEIGHT,
 )
 
 
@@ -256,15 +257,112 @@ def build_team_stats(season_id, elo_ratings, team_strengths, league_avgs,
 
 
 # ---------------------------------------------------------------------------
-# 6. Export e __main__
+# 6. Previsoes por jogo (para dashboard match preview)
+# ---------------------------------------------------------------------------
+
+def build_match_predictions(remaining_matches, team_strengths, league_avgs,
+                            elo_ratings=None, adj_goals_df=None):
+    """Gera previsoes (P(H)/P(D)/P(A), lambdas, stats) para cada jogo futuro.
+
+    Usado no dashboard para a view estilo 538 de preview de jogos.
+
+    Returns:
+        DataFrame com colunas:
+        [rodada, mandante, visitante, date_unix,
+         lambda_home, lambda_away, p_home, p_draw, p_away,
+         atk_home, def_home, atk_away, def_away,
+         avg_xg_home, avg_xg_away, avg_adj_home, avg_adj_away,
+         elo_home, elo_away]
+    """
+    from src.poisson import calculate_lambdas, score_probabilities
+
+    ts = team_strengths.set_index('team')
+    records = []
+
+    # Pre-computar medias de adjusted goals por time (se disponivel)
+    adj_avgs = {}
+    if adj_goals_df is not None:
+        for team in ts.index:
+            home_games = adj_goals_df[adj_goals_df['home_name'] == team]
+            away_games = adj_goals_df[adj_goals_df['away_name'] == team]
+            adj_for = (home_games['adj_goals_home'].sum()
+                       + away_games['adj_goals_away'].sum())
+            adj_against = (home_games['adj_goals_away'].sum()
+                           + away_games['adj_goals_home'].sum())
+            n_games = len(home_games) + len(away_games)
+            if n_games > 0:
+                adj_avgs[team] = {
+                    'avg_adj_for': round(adj_for / n_games, 3),
+                    'avg_adj_against': round(adj_against / n_games, 3),
+                }
+
+    for _, match in remaining_matches.iterrows():
+        home = match['mandante']
+        away = match['visitante']
+
+        lam_h, lam_a = calculate_lambdas(
+            home, away, team_strengths, league_avgs,
+            elo_ratings=elo_ratings,
+        )
+        probs = score_probabilities(lam_h, lam_a)
+
+        record = {
+            'rodada': match.get('rodada'),
+            'mandante': home,
+            'visitante': away,
+            'date_unix': match.get('date_unix'),
+            'lambda_home': round(lam_h, 3),
+            'lambda_away': round(lam_a, 3),
+            'p_home': round(probs['home_win'], 4),
+            'p_draw': round(probs['draw'], 4),
+            'p_away': round(probs['away_win'], 4),
+        }
+
+        # Stats do mandante
+        if home in ts.index:
+            record['atk_home'] = round(float(ts.loc[home, 'attack']), 3)
+            record['def_home'] = round(float(ts.loc[home, 'defense']), 3)
+            record['avg_xg_home'] = round(float(ts.loc[home, 'avg_for']), 3)
+        else:
+            record['atk_home'] = record['def_home'] = record['avg_xg_home'] = None
+
+        # Stats do visitante
+        if away in ts.index:
+            record['atk_away'] = round(float(ts.loc[away, 'attack']), 3)
+            record['def_away'] = round(float(ts.loc[away, 'defense']), 3)
+            record['avg_xg_away'] = round(float(ts.loc[away, 'avg_for']), 3)
+        else:
+            record['atk_away'] = record['def_away'] = record['avg_xg_away'] = None
+
+        # Adjusted goals medios
+        adj_h = adj_avgs.get(home, {})
+        adj_a = adj_avgs.get(away, {})
+        record['avg_adj_home'] = adj_h.get('avg_adj_for')
+        record['avg_adj_away'] = adj_a.get('avg_adj_for')
+
+        # ELO
+        if elo_ratings:
+            record['elo_home'] = round(elo_ratings.get(home, 1500), 1)
+            record['elo_away'] = round(elo_ratings.get(away, 1500), 1)
+        else:
+            record['elo_home'] = record['elo_away'] = None
+
+        records.append(record)
+
+    return pd.DataFrame(records)
+
+
+# ---------------------------------------------------------------------------
+# 7. Export e __main__
 # ---------------------------------------------------------------------------
 
 def export_all(season_id, elo_ratings, team_strengths, league_avgs,
+               adj_goals_df=None,
                db_path=DB_PATH, data_dir=DATA_DIR):
-    """Exporta os 3 CSVs da temporada para data/.
+    """Exporta os CSVs da temporada para data/.
 
     Returns:
-        dict com DataFrames: {table, remaining, team_stats}
+        dict com DataFrames: {table, remaining, team_stats, match_predictions}
     """
     os.makedirs(data_dir, exist_ok=True)
     year = [y for y, sid in SERIE_A_IDS.items() if sid == season_id][0]
@@ -285,10 +383,19 @@ def export_all(season_id, elo_ratings, team_strengths, league_avgs,
     stats_path = os.path.join(data_dir, f"team_stats_{year}.csv")
     team_stats.to_csv(stats_path, index=False)
 
+    # 4. Match predictions (previsoes por jogo)
+    match_preds = build_match_predictions(
+        remaining, team_strengths, league_avgs,
+        elo_ratings=elo_ratings, adj_goals_df=adj_goals_df,
+    )
+    preds_path = os.path.join(data_dir, f"match_predictions_{year}.csv")
+    match_preds.to_csv(preds_path, index=False)
+
     return {
         'table': table,
         'remaining': remaining,
         'team_stats': team_stats,
+        'match_predictions': match_preds,
     }
 
 

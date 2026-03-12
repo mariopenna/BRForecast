@@ -22,7 +22,7 @@ from src.config import (
     DB_PATH, DATA_DIR, SERIE_A_IDS, ELO_WINDOW_START, TARGET_YEAR,
     HFA, USE_XG, POISSON_MAX_GOALS, ELO_LAMBDA_WEIGHT,
     DRAW_BASE_RATE, MIN_MATCHES_SEASON, DIXON_COLES_RHO,
-    BLEND_ALPHA, EMA_ALPHA,
+    BLEND_ALPHA, EMA_ALPHA, ADJUSTED_GOALS_WEIGHT,
 )
 from src.elo import expected_score
 
@@ -38,7 +38,8 @@ def load_serie_a_with_xg(db_path=DB_PATH, start_year=ELO_WINDOW_START):
 
     conn = sqlite3.connect(db_path)
     df = pd.read_sql_query(f"""
-        SELECT m.home_name, m.away_name,
+        SELECT m.id AS match_id,
+               m.home_name, m.away_name,
                m.homeID, m.awayID,
                m.homeGoalCount, m.awayGoalCount,
                m.team_a_xg, m.team_b_xg,
@@ -99,7 +100,8 @@ def _compute_ema_strengths(valid_matches, col_home, col_away, alpha):
     return pd.DataFrame(rows).set_index('team')
 
 
-def calculate_team_strengths(matches_df, use_xg=USE_XG, ema_alpha=EMA_ALPHA):
+def calculate_team_strengths(matches_df, use_xg=USE_XG, ema_alpha=EMA_ALPHA,
+                             adj_goals_df=None, adj_weight=ADJUSTED_GOALS_WEIGHT):
     """Calcula forca ofensiva e defensiva de cada time relativa a liga.
 
     attack  > 1.0 = ataca mais que a media (bom)
@@ -107,6 +109,10 @@ def calculate_team_strengths(matches_df, use_xg=USE_XG, ema_alpha=EMA_ALPHA):
 
     Quando ema_alpha > 0, usa media movel exponencial (jogos recentes pesam
     mais). Quando 0, usa media simples (comportamento original).
+
+    Quando adj_goals_df e fornecido e adj_weight > 0, blenda a metrica
+    principal (xG ou gols) com adjusted goals:
+        metric_blend = (1 - adj_weight) * metric + adj_weight * adj_goals
 
     Returns:
         team_strengths: DataFrame [team, attack, defense, matches, avg_for, avg_against]
@@ -124,6 +130,26 @@ def calculate_team_strengths(matches_df, use_xg=USE_XG, ema_alpha=EMA_ALPHA):
         col_home = 'homeGoalCount'
         col_away = 'awayGoalCount'
         metric = 'Gols'
+
+    # Blend com adjusted goals se disponivel
+    if adj_goals_df is not None and adj_weight > 0:
+        valid = valid.merge(
+            adj_goals_df[['match_id', 'adj_goals_home', 'adj_goals_away']],
+            left_on='id' if 'id' in valid.columns else 'match_id',
+            right_on='match_id',
+            how='left',
+        )
+        has_adj = valid['adj_goals_home'].notna()
+        if has_adj.any():
+            valid.loc[has_adj, col_home] = (
+                (1 - adj_weight) * valid.loc[has_adj, col_home]
+                + adj_weight * valid.loc[has_adj, 'adj_goals_home']
+            )
+            valid.loc[has_adj, col_away] = (
+                (1 - adj_weight) * valid.loc[has_adj, col_away]
+                + adj_weight * valid.loc[has_adj, 'adj_goals_away']
+            )
+            metric = f'{metric}+AdjGoals({adj_weight:.0%})'
 
     # Medias da liga (sempre media simples — baseline para lambdas)
     avg_home = valid[col_home].mean()

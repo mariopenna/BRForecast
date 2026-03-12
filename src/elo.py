@@ -16,6 +16,7 @@ from src.config import (
     SERIE_A_IDS, SERIE_B_IDS, SERIE_C_IDS,
     K_PROGRESSIVE, K_BASE_DIVISION, ELO_WINDOW_START, TARGET_YEAR,
     ELO_SEASON_REGRESSION,
+    IMPORTANCE_ELO_K_BOOST, IMPORTANCE_ELO_START_YEAR,
 )
 
 
@@ -94,6 +95,78 @@ def _detect_first_division(matches_df):
     return first_appearance
 
 
+def _position_importance(position, n_teams=20):
+    """Proxy leve de importance baseado na posicao na tabela.
+
+    Times perto de zonas criticas (titulo, Libertadores, rebaixamento)
+    tem importance maior. Retorna valor entre 0 e 1.
+
+    Zonas criticas:
+      - Posicao 1: disputando titulo -> 1.0
+      - Posicoes 2-6: borda Libertadores -> decrescente
+      - Posicoes 7-12: meio de tabela -> baixo
+      - Posicoes 13-16: pre-rebaixamento -> crescente
+      - Posicoes 17-20: rebaixamento -> alto
+    """
+    if position <= 0 or position > n_teams:
+        return 0.0
+    # Titulo
+    if position == 1:
+        return 1.0
+    # Borda Libertadores (2-8): mais perto de 6/7, mais importante
+    if position <= 8:
+        dist = abs(position - 6.5)
+        return max(0.2, 1.0 - dist * 0.15)
+    # Meio de tabela (9-14): baixa importance
+    if position <= 14:
+        return 0.15
+    # Zona de rebaixamento e borda (15-20)
+    if position >= 17:
+        return 0.9  # na zona: muito importante
+    # 15-16: borda da zona
+    return 0.5 + (position - 14) * 0.15
+
+
+def _build_running_table(completed_matches_season):
+    """Constroi tabela parcial a partir de jogos ja realizados na temporada.
+
+    Retorna dict {team: posicao (1-based)}.
+    """
+    stats = {}
+    for _, m in completed_matches_season.iterrows():
+        home, away = m['home_name'], m['away_name']
+        hg, ag = int(m['homeGoalCount']), int(m['awayGoalCount'])
+
+        for team in [home, away]:
+            if team not in stats:
+                stats[team] = {'pts': 0, 'v': 0, 'sg': 0, 'gp': 0}
+
+        gf_h, ga_h = hg, ag
+        stats[home]['gp'] += gf_h
+        stats[home]['sg'] += gf_h - ga_h
+        stats[away]['gp'] += ga_h
+        stats[away]['sg'] += ga_h - gf_h
+
+        if hg > ag:
+            stats[home]['pts'] += 3
+            stats[home]['v'] += 1
+        elif hg == ag:
+            stats[home]['pts'] += 1
+            stats[away]['pts'] += 1
+        else:
+            stats[away]['pts'] += 3
+            stats[away]['v'] += 1
+
+    # Ordenar por criterios do Brasileirao
+    teams_sorted = sorted(
+        stats.keys(),
+        key=lambda t: (stats[t]['pts'], stats[t]['v'],
+                       stats[t]['sg'], stats[t]['gp']),
+        reverse=True,
+    )
+    return {t: i + 1 for i, t in enumerate(teams_sorted)}
+
+
 def calculate_all_elos(matches_df, hfa=HFA,
                        season_regression=ELO_SEASON_REGRESSION):
     """Calcula ELO iterando partida a partida (A+B+C, janela completa).
@@ -114,6 +187,10 @@ def calculate_all_elos(matches_df, hfa=HFA,
     team_last_div = {}  # tracks last division each team played in
     history = []
     current_max_season = 0
+
+    # Pre-filter Série A matches for importance tracking (2026+)
+    serie_a_sids = set(SERIE_A_IDS.values())
+    importance_season_matches = {}  # {season: list of completed matches}
 
     for _, match in matches_df.iterrows():
         home = match['home_name']
@@ -137,6 +214,25 @@ def calculate_all_elos(matches_df, hfa=HFA,
         # K efetivo para esta partida
         k = _get_effective_k(season, division)
 
+        # Importance-based K boost for Série A 2026+
+        k_importance = 0.0
+        if (IMPORTANCE_ELO_K_BOOST > 0
+                and season >= IMPORTANCE_ELO_START_YEAR
+                and division == 'A'):
+            # Build running table from completed matches this season
+            if season not in importance_season_matches:
+                importance_season_matches[season] = []
+            season_completed = importance_season_matches[season]
+
+            if len(season_completed) >= 20:  # min 1 rodada completa
+                positions = _build_running_table(
+                    pd.DataFrame(season_completed))
+                imp_h = _position_importance(positions.get(home, 10))
+                imp_a = _position_importance(positions.get(away, 10))
+                # K boost = media da importance dos dois times
+                k_importance = (imp_h + imp_a) / 2.0
+                k = k * (1.0 + IMPORTANCE_ELO_K_BOOST * k_importance)
+
         # Times novos: rating inicial pela divisão de primeira aparição
         if home not in ratings:
             ratings[home] = RATING_INICIAL.get(first_div.get(home, "B"), 1350)
@@ -159,6 +255,10 @@ def calculate_all_elos(matches_df, hfa=HFA,
 
         ratings[home] = update_rating(elo_home_before, score_home, exp_home, k)
         ratings[away] = update_rating(elo_away_before, score_away, exp_away, k)
+
+        # Track completed Série A matches for importance
+        if (season >= IMPORTANCE_ELO_START_YEAR and division == 'A'):
+            importance_season_matches.setdefault(season, []).append(match)
 
         history.append({
             'date_unix': match['date_unix'],

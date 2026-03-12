@@ -41,19 +41,30 @@ def run_pipeline(season_year, n_sims, backtest_mode=False, backtest_rounds=None)
     elo_ratings, elo_history = calculate_all_elos(elo_matches)
     print(f"       {len(elo_ratings)} times com ELO")
 
-    # --- 2. Poisson ---
+    # --- 2. Poisson + Adjusted Goals ---
     print(f"\n[2/5] Calculando forças Poisson...")
     matches_xg = load_serie_a_with_xg()
     target_m = matches_xg[matches_xg['season_year'] == season_year]
     target_done = target_m[target_m['status'] == 'complete']
 
+    # Carregar adjusted goals (se peso > 0)
+    from src.config import ADJUSTED_GOALS_WEIGHT
+    adj_goals_df = None
+    if ADJUSTED_GOALS_WEIGHT > 0:
+        from src.adjusted_goals import load_adjusted_goals
+        adj_goals_df = load_adjusted_goals()
+        print(f"       Adjusted goals: {len(adj_goals_df)} partidas, "
+              f"peso={ADJUSTED_GOALS_WEIGHT:.0%}")
+
     if len(target_done) < MIN_MATCHES_SEASON:
         print(f"       Apenas {len(target_done)} jogos em {season_year}, "
               f"incluindo {season_year - 1}")
         expanded = matches_xg[matches_xg['season_year'] >= season_year - 1]
-        team_strengths, league_avgs = calculate_team_strengths(expanded)
+        team_strengths, league_avgs = calculate_team_strengths(
+            expanded, adj_goals_df=adj_goals_df)
     else:
-        team_strengths, league_avgs = calculate_team_strengths(target_done)
+        team_strengths, league_avgs = calculate_team_strengths(
+            target_done, adj_goals_df=adj_goals_df)
     print(f"       {len(team_strengths)} times, "
           f"métrica: {league_avgs['metric']}")
 
@@ -64,8 +75,9 @@ def run_pipeline(season_year, n_sims, backtest_mode=False, backtest_rounds=None)
     remaining = load_remaining_matches(season_id)
     print(f"       {len(table)} times, {len(remaining)} jogos restantes")
 
-    # Export CSVs da Fase 4
-    export_all(season_id, elo_ratings, team_strengths, league_avgs)
+    # Export CSVs da Fase 4 (inclui match_predictions com adjusted goals)
+    export_all(season_id, elo_ratings, team_strengths, league_avgs,
+               adj_goals_df=adj_goals_df)
 
     if backtest_mode:
         # --- Backtest ---
@@ -87,14 +99,45 @@ def run_pipeline(season_year, n_sims, backtest_mode=False, backtest_rounds=None)
         print(f"\nBacktest concluído em {elapsed:.1f}s")
         return bt
 
-    # --- 4. Monte Carlo ---
-    print(f"\n[4/5] Rodando {n_sims} simulações Monte Carlo...")
-    positions, points, team_names = run_monte_carlo(
-        n_sims, remaining, table, team_strengths, league_avgs, elo_ratings,
+    # --- 4. Match Importance (próxima rodada) ---
+    from src.config import IMPORTANCE_N_SIMS
+    from src.importance import calculate_all_importance
+    import pandas as pd
+
+    next_round = remaining['rodada'].min()
+    next_matches = remaining[remaining['rodada'] == next_round]
+    print(f"\n[4/6] Calculando match importance — rodada {next_round} "
+          f"({len(next_matches)} jogos, {IMPORTANCE_N_SIMS} sims)...")
+
+    imp_df = calculate_all_importance(
+        next_matches, table, team_strengths, league_avgs, elo_ratings,
+        n_sims=IMPORTANCE_N_SIMS,
     )
 
-    # --- 5. Agregação e export ---
-    print(f"\n[5/5] Agregando e exportando resultados...")
+    # Construir importance_dict para a simulação
+    importance_dict = {}
+    for _, r in imp_df.iterrows():
+        importance_dict[(r['home'], r['away'])] = (
+            r['importance_home'], r['importance_away'])
+
+    # Exibir importance
+    imp_sorted = imp_df.sort_values('importance_match', ascending=False)
+    print(f"\n   {'Jogo':45s} {'Imp H':>6s} {'Imp A':>6s} {'Match':>6s}")
+    print(f"   {'-'*65}")
+    for _, r in imp_sorted.iterrows():
+        jogo = f"{r['home']} vs {r['away']}"
+        print(f"   {jogo:45s} {r['importance_home']:>5.1%} "
+              f"{r['importance_away']:>5.1%} {r['importance_match']:>5.1%}")
+
+    # --- 5. Monte Carlo (com importance) ---
+    print(f"\n[5/6] Rodando {n_sims} simulações Monte Carlo...")
+    positions, points, team_names = run_monte_carlo(
+        n_sims, remaining, table, team_strengths, league_avgs, elo_ratings,
+        importance_dict=importance_dict,
+    )
+
+    # --- 6. Agregação e export ---
+    print(f"\n[6/6] Agregando e exportando resultados...")
     results = aggregate_results(positions, points, team_names, n_sims)
     path = export_results(results, year=season_year)
 
@@ -107,6 +150,19 @@ def run_pipeline(season_year, n_sims, backtest_mode=False, backtest_rounds=None)
               f"{r['p_libertadores']:>7.1%} {r['p_sulamericana']:>6.1%} "
               f"{r['p_rebaixamento']:>6.1%} {r['pts_mean']:>5.1f} "
               f"{r['pos_mean']:>4.1f}")
+
+    # Merge importance no match_predictions CSV
+    preds_path = os.path.join(DATA_DIR, f"match_predictions_{season_year}.csv")
+    if os.path.exists(preds_path):
+        preds = pd.read_csv(preds_path)
+        imp_merge = imp_df[['home', 'away', 'importance_home',
+                            'importance_away', 'importance_match']].rename(
+            columns={'home': 'mandante', 'away': 'visitante'})
+        for col in ['importance_home', 'importance_away', 'importance_match']:
+            if col in preds.columns:
+                preds = preds.drop(columns=[col])
+        preds = preds.merge(imp_merge, on=['mandante', 'visitante'], how='left')
+        preds.to_csv(preds_path, index=False)
 
     elapsed = time.time() - t0
     print(f"\nPipeline concluído em {elapsed:.1f}s")

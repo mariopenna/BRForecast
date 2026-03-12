@@ -101,6 +101,36 @@ def load_team_stats(year=TARGET_YEAR):
 
 
 @_cache_data(ttl=3600)
+def load_adjusted_goals_avg():
+    """Calcula media de adjusted goals (pro e contra) por time.
+
+    Returns:
+        dict: {team_name: {'adj_for': float, 'adj_against': float}}
+    """
+    from src.adjusted_goals import load_adjusted_goals
+    adj = load_adjusted_goals()
+    # Filter to current season only
+    current = adj[adj["season_year"] == adj["season_year"].max()]
+    result = {}
+    for _, row in current.iterrows():
+        home = row["home_name"]
+        away = row["away_name"]
+        result.setdefault(home, {"adj_for": [], "adj_against": []})
+        result.setdefault(away, {"adj_for": [], "adj_against": []})
+        result[home]["adj_for"].append(row["adj_goals_home"])
+        result[home]["adj_against"].append(row["adj_goals_away"])
+        result[away]["adj_for"].append(row["adj_goals_away"])
+        result[away]["adj_against"].append(row["adj_goals_home"])
+    return {
+        team: {
+            "adj_for": sum(v["adj_for"]) / len(v["adj_for"]) if v["adj_for"] else 0,
+            "adj_against": sum(v["adj_against"]) / len(v["adj_against"]) if v["adj_against"] else 0,
+        }
+        for team, v in result.items()
+    }
+
+
+@_cache_data(ttl=3600)
 def load_remaining_matches(year=TARGET_YEAR):
     """Carrega jogos restantes da temporada."""
     path = os.path.join(DATA_DIR, f"jogos_restantes_{year}.csv")
@@ -425,17 +455,58 @@ def run_whatif(year, fixed_results, n_sims=5000):
 # =========================================================================
 
 @_cache_data(ttl=3600)
+def _load_upcoming_odds(year=TARGET_YEAR):
+    """Carrega odds pre-jogo do banco FootyStats para jogos futuros.
+
+    Returns:
+        dict {(home_name, away_name): (odds_1, odds_x, odds_2)}
+    """
+    import sqlite3
+    from src.config import DB_PATH, SERIE_A_IDS
+
+    season_id = SERIE_A_IDS.get(year)
+    if not season_id:
+        return {}
+
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        df = pd.read_sql_query(f"""
+            SELECT home_name, away_name, odds_ft_1, odds_ft_x, odds_ft_2
+            FROM matches
+            WHERE competition_id = {season_id}
+              AND status != 'complete'
+              AND odds_ft_1 IS NOT NULL
+              AND odds_ft_1 > 0
+        """, conn)
+        conn.close()
+    except Exception:
+        return {}
+
+    odds_dict = {}
+    for _, r in df.iterrows():
+        odds_dict[(r['home_name'], r['away_name'])] = (
+            r['odds_ft_1'], r['odds_ft_x'], r['odds_ft_2']
+        )
+    return odds_dict
+
+
+@_cache_data(ttl=3600)
 def compute_upcoming_probs(year=TARGET_YEAR):
     """Calcula probabilidades H/D/A para cada jogo restante.
 
+    Aplica blend com odds de casas de aposta quando disponiveis
+    (BLEND_ALPHA calibrado na Fase 6 para minimizar Brier Score).
+
     Returns:
-        DataFrame [rodada, mandante, visitante, p_home, p_draw, p_away]
+        DataFrame [rodada, mandante, visitante, p_home, p_draw, p_away, ...]
     """
     from src.poisson import calculate_lambdas, score_probabilities
+    from src.poisson import blend_with_odds, odds_to_probs
 
     remaining = load_remaining_matches(year)
     elo_ratings, _ = compute_elo_data()
     team_strengths, league_avgs = compute_strengths(year)
+    odds_dict = _load_upcoming_odds(year)
 
     rows = []
     for _, match in remaining.iterrows():
@@ -448,15 +519,29 @@ def compute_upcoming_probs(year=TARGET_YEAR):
         )
         probs = score_probabilities(lam_h, lam_a)
 
+        p_h = probs['home_win']
+        p_d = probs['draw']
+        p_a = probs['away_win']
+
+        # Blend com odds se disponiveis
+        odds = odds_dict.get((home, away))
+        has_odds = False
+        if odds and all(o and o > 0 for o in odds):
+            o_h, o_d, o_a = odds_to_probs(odds[0], odds[1], odds[2])
+            p_h, p_d, p_a = blend_with_odds(p_h, p_d, p_a, o_h, o_d, o_a)
+            has_odds = True
+
         rows.append({
             'rodada': match['rodada'],
             'mandante': home,
             'visitante': away,
-            'p_home': probs['home_win'],
-            'p_draw': probs['draw'],
-            'p_away': probs['away_win'],
+            'p_home': p_h,
+            'p_draw': p_d,
+            'p_away': p_a,
             'lambda_home': lam_h,
             'lambda_away': lam_a,
+            'date_unix': match.get('date_unix', None),
+            'has_odds': has_odds,
         })
 
     return pd.DataFrame(rows)

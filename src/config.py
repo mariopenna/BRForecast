@@ -66,11 +66,20 @@ DRAW_BASE_RATE = 0.274   # Taxa histórica Série A 2021-2026
 # === Poisson ===
 USE_XG = True              # Usar xG (True) ou gols reais (False) para calcular lambdas
 POISSON_MAX_GOALS = 7      # Máximo de gols na matriz de probabilidades
-ELO_LAMBDA_WEIGHT = 0.10   # Peso do ELO no ajuste dos lambdas (calibrado Fase 6: reduz vies mandante)
+ELO_LAMBDA_WEIGHT = 0.30   # Peso do ELO no ajuste dos lambdas
 BLEND_ALPHA = 0.34         # Peso do modelo no blend com odds (0=odds puras, 1=modelo puro)
 DIXON_COLES_RHO = -0.17    # Correcao Dixon-Coles (calibrado via grid search Serie A 2025; 0=Poisson puro)
 MIN_MATCHES_SEASON = 60    # Mínimo de jogos na temporada alvo; se menos, inclui temporada anterior
 EMA_ALPHA = 0.15           # Peso EMA para forcas ofensivas/defensivas (0=media simples)
+
+# === Adjusted Goals ===
+ADJUSTED_GOALS_WEIGHT = 0.30  # Blend: (1-w)*xG + w*adj_goals. 0=desligado
+
+# === Match Importance ===
+IMPORTANCE_N_SIMS = 500        # Mini-simulacoes para calcular importance (rapido)
+IMPORTANCE_LAMBDA_BOOST = 0.05 # Boost maximo nos lambdas para jogos decisivos
+IMPORTANCE_ELO_K_BOOST = 0.30  # Boost maximo no K do ELO para jogos decisivos (2026+)
+IMPORTANCE_ELO_START_YEAR = 2026  # Ano a partir do qual importance afeta o K do ELO
 
 # === Simulação ===
 N_SIMULATIONS = 20000
