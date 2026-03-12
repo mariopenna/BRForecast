@@ -2,8 +2,6 @@ rodada,mandante,visitante,mandante_id,visitante_id,date_unix,status
 4,Botafogo,Vitória,615,610,1771977600,suspended
 4,Flamengo,Mirassol,612,2721,1771977600,suspended
 4,Bahia,Chapecoense,626,623,1771977600,suspended
-5,Atlético Mineiro,Internacional,620,630,1773266400,incomplete
-5,Bahia,Vitória,626,610,1773270000,incomplete
 5,Flamengo,Cruzeiro,612,613,1773275400,incomplete
 5,Corinthians,Coritiba,624,627,1773275400,incomplete
 5,Remo,Fluminense,2594,617,1773352800,incomplete
