@@ -23,6 +23,7 @@ from data_processor import (
     compute_match_breakdown, load_elo_history, load_simulation_results,
     compute_upcoming_probs, compute_match_cards, get_zone_color,
     verdict_color, load_team_logos, ZONE_COLORS, TARGET_YEAR,
+    compute_elo_data, compute_strengths, load_adjusted_goals_avg,
 )
 
 # =========================================================================
@@ -48,6 +49,7 @@ st.sidebar.caption(f"Campeonato Brasileiro Serie A {TARGET_YEAR}")
 
 SECTIONS = [
     "Classificacao Atual",
+    "Proximos Jogos",
     "Evolucao ELO",
     "Previsao Final",
     "Deep Dive por Time",
@@ -393,6 +395,353 @@ td.tm{{text-decoration:none;cursor:default}}
 | **P** | Pontos reais acumulados |
 | **xPTS** | Pontos esperados |
 | **P+/-** | Saldo de Pontos vs Esperados |
+""")
+
+
+# =========================================================================
+# SECTION: Proximos Jogos (FiveThirtyEight-style)
+# =========================================================================
+
+def section_proximos_jogos():
+    st.subheader("Proximos Jogos")
+
+    upcoming = compute_upcoming_probs()
+    if upcoming.empty:
+        st.info("Nenhum jogo futuro encontrado.")
+        return
+
+    stats = load_team_stats()
+    table = load_current_table()
+    elo_ratings, _ = compute_elo_data()
+    team_strengths, league_avgs = compute_strengths()
+    logos = load_team_logos()
+    adj_goals_dict = load_adjusted_goals_avg()
+
+    # Build lookup dicts
+    elo_dict = elo_ratings if isinstance(elo_ratings, dict) else {}
+    stats_dict = {}
+    for _, r in stats.iterrows():
+        stats_dict[r["team"]] = r
+    table_dict = {}
+    for _, r in table.iterrows():
+        table_dict[r["team"]] = r
+
+    # --- Filter by date: next upcoming matches ---
+    import datetime as _dt
+
+    now_utc = _dt.datetime.now(_dt.timezone.utc)
+    upcoming["_date_ts"] = pd.to_numeric(upcoming["date_unix"], errors="coerce")
+    # Keep only future matches (date >= now) with valid dates
+    future = upcoming[
+        upcoming["_date_ts"].notna()
+        & (upcoming["_date_ts"] >= now_utc.timestamp())
+    ].copy()
+
+    if future.empty:
+        st.info("Nenhum jogo futuro encontrado.")
+        return
+
+    # Find the earliest rodada among future matches
+    next_rodada = int(future["rodada"].min())
+    filtered = future[future["rodada"] == next_rodada].copy()
+    filtered = filtered.sort_values("_date_ts")
+
+    # Format date range for display
+    ts_min = filtered["_date_ts"].min()
+    ts_max = filtered["_date_ts"].max()
+    d_min = _dt.datetime.fromtimestamp(ts_min, tz=_dt.timezone.utc)
+    d_max = _dt.datetime.fromtimestamp(ts_max, tz=_dt.timezone.utc)
+    MESES = {1:"jan",2:"fev",3:"mar",4:"abr",5:"mai",6:"jun",
+             7:"jul",8:"ago",9:"set",10:"out",11:"nov",12:"dez"}
+    if d_min.date() == d_max.date():
+        date_range = f"{d_min.day} {MESES[d_min.month]}"
+    else:
+        date_range = f"{d_min.day}–{d_max.day} {MESES[d_max.month]}"
+
+    st.caption(f"Rodada {next_rodada} — {len(filtered)} jogos — {date_range}")
+
+    def _esc(text):
+        return html_lib.escape(str(text), quote=True)
+
+    # Build match cards HTML
+    cards_html_parts = []
+    for _, m in filtered.iterrows():
+        home = m["mandante"]
+        away = m["visitante"]
+        p_h = m["p_home"]
+        p_d = m["p_draw"]
+        p_a = m["p_away"]
+        lam_h = m["lambda_home"]
+        lam_a = m["lambda_away"]
+        rodada = int(m["rodada"])
+
+        # ELO
+        elo_h = elo_dict.get(home, 1500)
+        elo_a = elo_dict.get(away, 1500)
+
+        # Stats
+        s_h = stats_dict.get(home)
+        s_a = stats_dict.get(away)
+        atk_h = f"{s_h['attack']:.2f}" if s_h is not None else "—"
+        def_h = f"{s_h['defense']:.2f}" if s_h is not None else "—"
+        atk_a = f"{s_a['attack']:.2f}" if s_a is not None else "—"
+        def_a = f"{s_a['defense']:.2f}" if s_a is not None else "—"
+
+        # xG averages
+        xg_for_h = f"{s_h['avg_xg_for']:.2f}" if s_h is not None and pd.notna(s_h.get('avg_xg_for')) else "—"
+        xg_for_a = f"{s_a['avg_xg_for']:.2f}" if s_a is not None and pd.notna(s_a.get('avg_xg_for')) else "—"
+
+        # Adjusted goals averages
+        ag_h = adj_goals_dict.get(home)
+        ag_a = adj_goals_dict.get(away)
+        adj_for_h = f"{ag_h['adj_for']:.2f}" if ag_h else "—"
+        adj_for_a = f"{ag_a['adj_for']:.2f}" if ag_a else "—"
+
+        # Position
+        t_h = table_dict.get(home)
+        t_a = table_dict.get(away)
+        pos_h = int(t_h["posicao"]) if t_h is not None else "—"
+        pos_a = int(t_a["posicao"]) if t_a is not None else "—"
+
+        # Logo HTML
+        logo_h = ""
+        logo_a = ""
+        url_h = logos.get(home, "")
+        url_a = logos.get(away, "")
+        if url_h:
+            logo_h = f'<img src="{url_h}" width="24" height="24" style="vertical-align:middle;margin-right:8px">'
+        if url_a:
+            logo_a = f'<img src="{url_a}" width="24" height="24" style="vertical-align:middle;margin-right:8px">'
+
+        # Probability bar widths (minimum 8% width for visibility)
+        bar_h = max(p_h * 100, 8)
+        bar_d = max(p_d * 100, 8)
+        bar_a = max(p_a * 100, 8)
+        total = bar_h + bar_d + bar_a
+        bar_h = bar_h / total * 100
+        bar_d = bar_d / total * 100
+        bar_a = bar_a / total * 100
+
+        # Determine favorite
+        bold_h = "font-weight:700" if p_h >= p_d and p_h >= p_a else ""
+        bold_d = "font-weight:700" if p_d >= p_h and p_d >= p_a else ""
+        bold_a = "font-weight:700" if p_a >= p_h and p_a >= p_d else ""
+
+        # Match date for header
+        match_date_str = ""
+        ts = m.get("_date_ts")
+        if pd.notna(ts):
+            mdt = _dt.datetime.fromtimestamp(float(ts), tz=_dt.timezone.utc)
+            mdt = mdt - _dt.timedelta(hours=3)  # Brasilia UTC-3
+            _DIAS = {0:"Seg",1:"Ter",2:"Qua",3:"Qui",4:"Sex",5:"Sab",6:"Dom"}
+            match_date_str = (
+                f" &middot; {_DIAS.get(mdt.weekday(),'')} {mdt.day}/{mdt.month:02d}"
+                f" {mdt.hour:02d}:{mdt.minute:02d}"
+            )
+
+        card = f"""
+        <div class="match-card">
+          <div class="match-header">Rodada {rodada}{match_date_str}</div>
+          <div class="match-teams">
+            <div class="team home-team">
+              <span class="team-name">{logo_h}<b>{_esc(home)}</b></span>
+              <span class="team-pos">{pos_h}o</span>
+            </div>
+            <div class="vs-label">vs</div>
+            <div class="team away-team">
+              <span class="team-name">{logo_a}<b>{_esc(away)}</b></span>
+              <span class="team-pos">{pos_a}o</span>
+            </div>
+          </div>
+          <div class="prob-bar">
+            <div class="prob-seg prob-home" style="width:{bar_h:.1f}%">
+              <span style="{bold_h}">{p_h:.0%}</span>
+            </div>
+            <div class="prob-seg prob-draw" style="width:{bar_d:.1f}%">
+              <span style="{bold_d}">{p_d:.0%}</span>
+            </div>
+            <div class="prob-seg prob-away" style="width:{bar_a:.1f}%">
+              <span style="{bold_a}">{p_a:.0%}</span>
+            </div>
+          </div>
+          <div class="prob-labels">
+            <span class="label-home">Vitoria {_esc(home)}</span>
+            <span class="label-draw">Empate</span>
+            <span class="label-away">Vitoria {_esc(away)}</span>
+          </div>
+          <table class="match-stats">
+            <thead>
+              <tr>
+                <th style="text-align:left"></th>
+                <th>{_esc(home)}</th>
+                <th>{_esc(away)}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="stat-label">Gols Esperados</td>
+                <td class="stat-val{' stat-better' if lam_h > lam_a else ''}">{lam_h:.2f}</td>
+                <td class="stat-val{' stat-better' if lam_a > lam_h else ''}">{lam_a:.2f}</td>
+              </tr>
+              <tr>
+                <td class="stat-label">xG medio</td>
+                <td class="stat-val">{xg_for_h}</td>
+                <td class="stat-val">{xg_for_a}</td>
+              </tr>
+              <tr>
+                <td class="stat-label">Adjusted Goals</td>
+                <td class="stat-val">{adj_for_h}</td>
+                <td class="stat-val">{adj_for_a}</td>
+              </tr>
+              <tr>
+                <td class="stat-label">Rating ELO</td>
+                <td class="stat-val{' stat-better' if elo_h > elo_a else ''}">{elo_h:.0f}</td>
+                <td class="stat-val{' stat-better' if elo_a > elo_h else ''}">{elo_a:.0f}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        """
+        cards_html_parts.append(card)
+
+    full_html = f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+*{{margin:0;padding:0;box-sizing:border-box}}
+body{{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  font-size:14px;background:#fff;
+}}
+.cards-grid{{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(340px,1fr));
+  gap:16px;
+  padding:8px 0;
+}}
+.match-card{{
+  border:1px solid #e0e0e0;
+  border-radius:10px;
+  padding:16px;
+  background:#fafafa;
+}}
+.match-header{{
+  font-size:.75rem;
+  color:#888;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+  margin-bottom:10px;
+  font-weight:600;
+}}
+.match-teams{{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:12px;
+}}
+.team{{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  flex:1;
+}}
+.team-name{{
+  font-size:.95rem;
+  display:flex;
+  align-items:center;
+}}
+.team-pos{{
+  font-size:.72rem;
+  color:#999;
+  margin-top:2px;
+}}
+.vs-label{{
+  color:#ccc;
+  font-size:.85rem;
+  font-weight:600;
+  padding:0 8px;
+}}
+.prob-bar{{
+  display:flex;
+  border-radius:6px;
+  overflow:hidden;
+  height:32px;
+  margin-bottom:4px;
+}}
+.prob-seg{{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:.82rem;
+  color:#fff;
+  font-weight:500;
+  min-width:36px;
+}}
+.prob-home{{background:#3b82f6}}
+.prob-draw{{background:#9ca3af}}
+.prob-away{{background:#ef4444}}
+.prob-labels{{
+  display:flex;
+  justify-content:space-between;
+  font-size:.65rem;
+  color:#999;
+  margin-bottom:14px;
+  padding:0 2px;
+}}
+.match-stats{{
+  width:100%;
+  border-collapse:collapse;
+  font-size:.82rem;
+}}
+.match-stats thead th{{
+  padding:6px 8px;
+  font-weight:600;
+  font-size:.72rem;
+  text-transform:uppercase;
+  letter-spacing:.03em;
+  text-align:center;
+  border-bottom:2px solid #ddd;
+  color:#555;
+}}
+.match-stats thead th:first-child{{
+  text-align:left;
+}}
+.match-stats td{{
+  padding:5px 8px;
+  border-bottom:1px solid #eee;
+  text-align:center;
+  font-variant-numeric:tabular-nums;
+}}
+.stat-label{{
+  text-align:left !important;
+  color:#666;
+  font-weight:500;
+}}
+.stat-val{{}}
+.stat-better{{
+  font-weight:700;
+  color:#1a1a2e;
+}}
+</style></head><body>
+<div class="cards-grid">
+{"".join(cards_html_parts)}
+</div>
+</body></html>"""
+
+    n_cards = len(filtered)
+    rows_est = (n_cards + 1) // 2
+    height = min(rows_est * 340 + 40, 2400)
+    components.html(full_html, height=height, scrolling=True)
+
+    # Glossario
+    st.markdown("")
+    st.caption("**Glossario**")
+    st.markdown("""
+| Termo | Descricao |
+|-------|-----------|
+| **Barra de probabilidade** | Azul = vitoria mandante, cinza = empate, vermelho = vitoria visitante. Largura proporcional a probabilidade |
+| **Adjusted Goals** | Media de gols ajustados marcados por jogo na temporada. Gols tardios em goleada ou contra 10 jogadores valem menos |
+| **xG medio** | Media de Expected Goals (gols esperados baseado na qualidade das finalizacoes) por jogo |
+| **Gols Esperados** | Previsao do modelo Poisson para este confronto especifico (lambda) |
+| **Rating ELO** | Forca relativa do time. 1500 = media. Incorpora resultados historicos |
 """)
 
 
@@ -1633,6 +1982,8 @@ as chances criadas justificavam.
 
 if section == "Classificacao Atual":
     section_classificacao()
+elif section == "Proximos Jogos":
+    section_proximos_jogos()
 elif section == "Evolucao ELO":
     section_elo()
 elif section == "Previsao Final":

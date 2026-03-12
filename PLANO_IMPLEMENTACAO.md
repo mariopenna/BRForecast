@@ -650,16 +650,18 @@ Unir todas as fases anteriores em dashboard interativo Streamlit com 7 seções,
 
 Lista priorizada de melhorias para implementar após o MVP estar funcionando:
 
-| # | Refinamento | Complexidade | Impacto | Descrição |
-|---|-------------|-------------|---------|-----------|
-| 1 | Caching de simulações | Baixa | Alto (UX) | Salvar resultados em JSON com metadata (timestamp, parâmetros). Só re-simular se dados mudaram |
-| 2 | EMA para lambdas | Média | Alto | Peso maior para jogos recentes no cálculo de poder ofensivo/defensivo. Captura forma atual |
-| 3 | Regressão à média entre temporadas | Baixa | Médio | `Rating × 0.67 + 1500 × 0.33` ao início de cada temporada. Simula mudanças de elenco |
-| 4 | Hot ELO na simulação | Média | Médio | Atualizar ELO após cada jogo simulado dentro do Monte Carlo. Captura momentum |
-| 5 | Séries B/C alimentando ELO | Média | Médio | Times promovidos entram com ELO da divisão inferior, não com 1500 |
-| 6 | K variável por margem | Baixa | Baixo | `K × ln(saldo + 1)` — goleadas valem mais, com retorno decrescente |
-| 7 | Auto-refresh com novos jogos | Alta | Alto | Detectar novos dados no banco e re-rodar pipeline automaticamente |
-| 8 | Modelo Dixon-Coles | Alta | Médio | Correção do Poisson para placares baixos (0x0, 1x0, 0x1 são mais comuns que o Poisson puro prevê) |
+| # | Refinamento | Complexidade | Impacto | Status | Descrição |
+|---|-------------|-------------|---------|--------|-----------|
+| 1 | Caching de simulações | Baixa | Alto (UX) | Pendente | Salvar resultados em JSON com metadata (timestamp, parâmetros). Só re-simular se dados mudaram |
+| 2 | EMA para lambdas | Média | Alto | **Feito** | `EMA_ALPHA=0.15` em config.py. Jogos recentes pesam mais no cálculo de forças |
+| 3 | Regressão à média entre temporadas | Baixa | Médio | **Feito** | `ELO_SEASON_REGRESSION=0.15` em config.py. Aplicada na fronteira de cada temporada |
+| 4 | Hot ELO na simulação | Média | Médio | **Feito** | `HOT_UPDATE=True`, `K_SIMULATION=30`. Atualiza ELO a cada jogo simulado no Monte Carlo |
+| 5 | Séries B/C alimentando ELO | Média | Médio | **Feito** | `RATING_INICIAL` por divisão (A=1500, B=1350, C=1200). Séries B/C entram no cálculo |
+| 6 | K variável por margem | Baixa | Baixo | Pendente | `K × ln(saldo + 1)` — goleadas valem mais, com retorno decrescente |
+| 7 | Auto-refresh com novos jogos | Alta | Alto | Pendente | Detectar novos dados no banco e re-rodar pipeline automaticamente |
+| 8 | Modelo Dixon-Coles | Alta | Médio | **Feito** | `DIXON_COLES_RHO=-0.17` calibrado via grid search. Corrige placares baixos |
+| 9 | **Adjusted Goals** | Média | Médio | **Feito** | `src/adjusted_goals.py`. Gols tardios com placar definido (peso 0.5-0.75) e gols contra 10 jogadores (peso 0.8) valem menos no cálculo de forças. Blendado com xG via `ADJUSTED_GOALS_WEIGHT=0.15` |
+| 10 | **Match Importance** | Alta | Médio | **Feito** | `src/importance.py`. Calcula quanto cada jogo impacta as probabilidades do time (título, Libertadores, rebaixamento) via mini Monte Carlo. Ajusta lambdas via `IMPORTANCE_LAMBDA_BOOST=0.05`. Jogos decisivos = times rendem mais |
 
 ---
 
