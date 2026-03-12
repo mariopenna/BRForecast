@@ -107,8 +107,13 @@ def load_adjusted_goals_avg():
     Returns:
         dict: {team_name: {'adj_for': float, 'adj_against': float}}
     """
-    from src.adjusted_goals import load_adjusted_goals
-    adj = load_adjusted_goals()
+    # Tenta CSV primeiro (funciona no Cloud), fallback para DB
+    csv_path = os.path.join(DATA_DIR, "adjusted_goals.csv")
+    if os.path.exists(csv_path):
+        adj = pd.read_csv(csv_path)
+    else:
+        from src.adjusted_goals import load_adjusted_goals
+        adj = load_adjusted_goals()
     # Filter to current season only
     current = adj[adj["season_year"] == adj["season_year"].max()]
     result = {}
@@ -456,31 +461,38 @@ def run_whatif(year, fixed_results, n_sims=5000):
 
 @_cache_data(ttl=3600)
 def _load_upcoming_odds(year=TARGET_YEAR):
-    """Carrega odds pre-jogo do banco FootyStats para jogos futuros.
+    """Carrega odds pre-jogo para jogos futuros.
+
+    Tenta CSV primeiro (Cloud), fallback para banco FootyStats (local).
 
     Returns:
         dict {(home_name, away_name): (odds_1, odds_x, odds_2)}
     """
-    import sqlite3
-    from src.config import DB_PATH, SERIE_A_IDS
+    # Tenta CSV primeiro
+    csv_path = os.path.join(DATA_DIR, f"upcoming_odds_{year}.csv")
+    if os.path.exists(csv_path):
+        df = pd.read_csv(csv_path)
+    else:
+        import sqlite3
+        from src.config import DB_PATH, SERIE_A_IDS
 
-    season_id = SERIE_A_IDS.get(year)
-    if not season_id:
-        return {}
+        season_id = SERIE_A_IDS.get(year)
+        if not season_id:
+            return {}
 
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        df = pd.read_sql_query(f"""
-            SELECT home_name, away_name, odds_ft_1, odds_ft_x, odds_ft_2
-            FROM matches
-            WHERE competition_id = {season_id}
-              AND status != 'complete'
-              AND odds_ft_1 IS NOT NULL
-              AND odds_ft_1 > 0
-        """, conn)
-        conn.close()
-    except Exception:
-        return {}
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            df = pd.read_sql_query(f"""
+                SELECT home_name, away_name, odds_ft_1, odds_ft_x, odds_ft_2
+                FROM matches
+                WHERE competition_id = {season_id}
+                  AND status != 'complete'
+                  AND odds_ft_1 IS NOT NULL
+                  AND odds_ft_1 > 0
+            """, conn)
+            conn.close()
+        except Exception:
+            return {}
 
     odds_dict = {}
     for _, r in df.iterrows():

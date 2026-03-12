@@ -79,6 +79,32 @@ def run_pipeline(season_year, n_sims, backtest_mode=False, backtest_rounds=None)
     export_all(season_id, elo_ratings, team_strengths, league_avgs,
                adj_goals_df=adj_goals_df)
 
+    # Export adjusted goals CSV (para Streamlit Cloud)
+    if adj_goals_df is not None:
+        adj_path = os.path.join(DATA_DIR, "adjusted_goals.csv")
+        adj_goals_df.to_csv(adj_path, index=False)
+        print(f"       Adjusted goals CSV: {adj_path}")
+
+    # Export upcoming odds CSV (para Streamlit Cloud)
+    try:
+        import sqlite3
+        from src.config import DB_PATH
+        conn = sqlite3.connect(DB_PATH)
+        odds_df = pd.read_sql_query(f"""
+            SELECT home_name, away_name, odds_ft_1, odds_ft_x, odds_ft_2, game_week
+            FROM matches
+            WHERE competition_id = {season_id}
+              AND status != 'complete'
+              AND odds_ft_1 IS NOT NULL
+              AND odds_ft_1 > 0
+        """, conn)
+        conn.close()
+        odds_path = os.path.join(DATA_DIR, f"upcoming_odds_{season_year}.csv")
+        odds_df.to_csv(odds_path, index=False)
+        print(f"       Odds CSV: {odds_path} ({len(odds_df)} jogos)")
+    except Exception as e:
+        print(f"       Aviso: nao foi possivel exportar odds — {e}")
+
     if backtest_mode:
         # --- Backtest ---
         if backtest_rounds is None:
